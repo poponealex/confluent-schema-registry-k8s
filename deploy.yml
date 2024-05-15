@@ -4,8 +4,6 @@ kind: Deployment
 metadata:
   labels:
     app: registry
-    app.kubernetes.io/instance: registry
-    app.kubernetes.io/name: confluent-registry
   name: registry-deployment
   namespace: <NAMESPACE>
 spec:
@@ -33,9 +31,9 @@ spec:
         - name: SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS
           value: "kafka-kafka-bootstrap:9094"
         - name: SCHEMA_REGISTRY_HOST_NAME
-          value: "localhost"
+          value: "0.0.0.0"
         - name: SCHEMA_REGISTRY_LISTENERS
-          value: "http://localhost:8080"
+          value: "http://0.0.0.0:8080"
         - name: SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_LOCATION
           value: /ssl/truststore.jks
         - name: SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_PASSWORD
@@ -124,6 +122,4 @@ spec:
     targetPort: 8080
   selector:
     app: registry
-    app.kubernetes.io/instance: registry
-    app.kubernetes.io/name: confluent-registry
   type: ClusterIP
