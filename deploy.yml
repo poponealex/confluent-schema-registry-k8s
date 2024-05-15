@@ -1,0 +1,131 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: registry
+    app.kubernetes.io/instance: registry
+    app.kubernetes.io/name: confluent-registry
+  name: registry-deployment
+  namespace: <NAMESPACE>
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: registry
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: registry
+        app.kubernetes.io/instance: registry
+        app.kubernetes.io/name: confluent-registry
+    spec:
+      containers:
+      - env:
+        - name: SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL
+          value: "kafka-zookeeper-client:2181"
+        - name: SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS
+          value: "kafka-kafka-bootstrap:9094"
+        - name: SCHEMA_REGISTRY_HOST_NAME
+          value: "localhost"
+        - name: SCHEMA_REGISTRY_LISTENERS
+          value: "http://localhost:8080"
+        - name: SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_LOCATION
+          value: /ssl/truststore.jks
+        - name: SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: truststore_password
+              name: kafka-registry-creds
+        - name:  SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_LOCATION
+          value: /ssl/keystore.jks
+        - name: SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: keystore_password
+              name: kafka-registry-creds
+        - name: SCHEMA_REGISTRY_KAFKASTORE_SSL_KEY_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: keystore_password
+              name: kafka-registry-creds
+        - name: SCHEMA_REGISTRY_KAFKASTORE_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM
+          value: HTTPS
+        - name: SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL
+          value: SSL
+        - name: CUB_CLASSPATH
+          value: '/etc/confluent/docker/docker-utils.jar:/usr/share/java/confluent-security/schema-registry/*:/usr/share/java/schema-registry/*:/usr/share/java/cp-base-new/*'
+        - name: SCHEMA_REGISTRY_SCHEMA_REGISTRY_INTER_INSTANCE_PROTOCOL
+          value: "http"
+        - name: SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL
+          value: INFO
+        - name: SCHEMA_REGISTRY_KAFKASTORE_TOPIC
+          value: _schemas
+        - name: SCHEMA_REGISTRY_DEBUG
+          value: 'true'
+        image: confluentinc/cp-schema-registry:latest
+        imagePullPolicy: IfNotPresent
+        name: registry
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        resources:
+          limits:
+            cpu: "1"
+            memory: 3Gi
+          requests:
+            cpu: 500m
+            memory: 1Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: false
+          seccompProfile:
+            type: RuntimeDefault
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /ssl
+          name: kafka-registry-creds
+          readOnly: true
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: kafka-registry-creds
+        secret:
+          defaultMode: 420
+          secretName: kafka-registry-creds
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: registry-service
+  namespace: <NAMESPACE>
+spec:
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: registry
+    app.kubernetes.io/instance: registry
+    app.kubernetes.io/name: confluent-registry
+  type: ClusterIP
