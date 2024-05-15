@@ -30,8 +30,6 @@ spec:
     spec:
       containers:
       - env:
-        - name: SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL
-          value: "kafka-zookeeper-client:2181"
         - name: SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS
           value: "kafka-kafka-bootstrap:9094"
         - name: SCHEMA_REGISTRY_HOST_NAME
