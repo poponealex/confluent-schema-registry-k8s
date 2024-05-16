@@ -1,3 +1,5 @@
+# Deploy a Confluent Schema Registry with mTLS authentication to the Kafka cluster
+
 1. Create a `KafkaUser` named `registry-user`
 ```
 kubectl -n kafka create -f registry-user.yml
